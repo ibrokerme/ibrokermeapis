@@ -1,11 +1,18 @@
 var jwt = require('jwt-simple');
-
 var auth = {
+    login: login,
+    validateUser: validateUser
 
-    login: function (req, res) {
+}
 
-        var username = req.body.username || '';
-        var password = req.body.password || '';
+function login(req, res) {
+
+    var form = new formidable.IncomingForm();
+    form.parse(req, function (err, data) {
+
+        var username = data.username || '';
+        var password = data.password || '';
+        var category = data.category || '';
 
         if (username == '' || password == '') {
             res.status(401);
@@ -17,50 +24,75 @@ var auth = {
         }
 
         // Fire a query to your DB and check if the credentials are valid
-        var dbUserObj = auth.validate(username, password);
+        validate(username, password, category, function (err, output) {
+            if (!output) { // If authentication fails, we send a 401 back
+                res.status(401);
+                res.json({
+                    "status": 401,
+                    "message": "Invalid credentials"
+                });
+                return;
+            }
 
-        if (!dbUserObj) { // If authentication fails, we send a 401 back
-            res.status(401);
-            res.json({
-                "status": 401,
-                "message": "Invalid credentials"
+            if (output) {
+
+                // If authentication is success, we will generate a token
+                // and dispatch it to the client
+                res.json(genToken(output));
+            }
+        });
+
+    })
+};
+
+function validate(username, password, category, callback) {
+    switch (category) {
+        case 'school':
+            db.collection('schoolcollection', function (err, collection) {
+                collection.find({ regnumber: username, locked: 0 }).toArray(function (err, items) {
+                    return callback(null, items[0]);
+                });
             });
-            return;
-        }
 
-        if (dbUserObj) {
+            break;
+        case 'admin':
+            db.collection('admincollection', function (err, collection) {
+                collection.find({ username: username, locked: false }).toArray(function (err, items) {
+                    return callback(null, items[0]);
+                });
+            });
+            break;
+        case 'teacher':
+            db.collection('schoolteachercollection', function (err, collection) {
+                collection.find({ username: username, "schoolteacher.suspended": false }).toArray(function (err, items) {
+                    if (items !== null && typeof (items) != 'undefined' && items.length > 0) {
+                        return callback(null, items[0]);
 
-            // If authentication is success, we will generate a token
-            // and dispatch it to the client
+                    }
+                });
+            });
+            break;
+        case 'student':
+            db.collection('schoolstudentcollection', function (err, collection) {
+                collection.find({ username: username, "schoolstudent.suspended": false }).toArray(function (err, items) {
+                    return callback(null, items[0]);
+                });
+            });
+            break;
+        case 'parent':
+            db.collection('schoolstudentcollection', function (err, collection) {
+                collection.find({ parentusername: username, "schoolstudent.suspended": false }).toArray(function (err, items) {
+                    return callback(null, items[0]);
+                });
+            });
+            break;
+        default: return;
+    }
+};
 
-            res.json(genToken(dbUserObj));
-        }
-
-    },
-
-    validate: function (username, password) {
-        // spoofing the DB response for simplicity
-        var dbUserObj = { // spoofing a userobject from the DB. 
-            name: 'arvind',
-            role: 'admin',
-            username: 'arvind@myapp.com'
-        };
-
-        return dbUserObj;
-    },
-
-    validateUser: function (username) {
-        // spoofing the DB response for simplicity
-        var dbUserObj = { // spoofing a userobject from the DB. 
-            name: 'arvind',
-            role: 'admin',
-            username: 'arvind@myapp.com'
-        };
-
-        return dbUserObj;
-    },
-}
-
+function validateUser(username, category, callback) {
+    return validate(username, null, category, callback);
+};
 // private method
 function genToken(user) {
     var expires = expiresIn(7); // 7 days
