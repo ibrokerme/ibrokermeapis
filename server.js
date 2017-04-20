@@ -44,7 +44,7 @@ MongoClient.connect(url, function (err, database) {
 });
 
 
-var students = require('./routes/students');
+var registrations = require('./routes/registrations');
 var edata = require('./routes/edata');
 var equestion = require('./routes/questions');
 var clients = require('./routes/clients');
@@ -85,7 +85,7 @@ app.all('/api/v1/*', [require('./middlewares/validaterequest')]);
 //login
 app.post('/login', auth.login);
 //stdent
-app.get(version + 'studentregsubjects/:authdata', students.getstudentregisteredsubjects);
+app.post('/userregistration/:authdata', registrations.addregistration);
 
 
 app.get(version + 'subjecttopics/:selectedsubject', edata.getsubjecttopics);

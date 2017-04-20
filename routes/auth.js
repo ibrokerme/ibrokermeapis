@@ -4,17 +4,14 @@ var auth = {
     validateUser: validateUser
 
 }
-
 function login(req, res) {
-
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, data) {
-
-        var username = data.username || '';
+        var email = data.email || '';
         var password = data.password || '';
-        var category = data.category || '';
 
-        if (username == '' || password == '') {
+
+        if (email == '' || password == '') {
             res.status(401);
             res.json({
                 "status": 401,
@@ -24,7 +21,7 @@ function login(req, res) {
         }
 
         // Fire a query to your DB and check if the credentials are valid
-        validate(username, password, category, function (err, output) {
+        validate(email, function (err, output) {
             if (!output) { // If authentication fails, we send a 401 back
                 res.status(401);
                 res.json({
@@ -45,53 +42,16 @@ function login(req, res) {
     })
 };
 
-function validate(username, password, category, callback) {
-    switch (category) {
-        case 'school':
-            db.collection('schoolcollection', function (err, collection) {
-                collection.find({ regnumber: username, locked: 0 }).toArray(function (err, items) {
-                    return callback(null, items[0]);
-                });
-            });
-
-            break;
-        case 'admin':
-            db.collection('admincollection', function (err, collection) {
-                collection.find({ username: username, locked: false }).toArray(function (err, items) {
-                    return callback(null, items[0]);
-                });
-            });
-            break;
-        case 'teacher':
-            db.collection('schoolteachercollection', function (err, collection) {
-                collection.find({ username: username, "schoolteacher.suspended": false }).toArray(function (err, items) {
-                    if (items !== null && typeof (items) != 'undefined' && items.length > 0) {
-                        return callback(null, items[0]);
-
-                    }
-                });
-            });
-            break;
-        case 'student':
-            db.collection('schoolstudentcollection', function (err, collection) {
-                collection.find({ username: username, "schoolstudent.suspended": false }).toArray(function (err, items) {
-                    return callback(null, items[0]);
-                });
-            });
-            break;
-        case 'parent':
-            db.collection('schoolstudentcollection', function (err, collection) {
-                collection.find({ parentusername: username, "schoolstudent.suspended": false }).toArray(function (err, items) {
-                    return callback(null, items[0]);
-                });
-            });
-            break;
-        default: return;
-    }
+function validate(email, password, callback) {
+    db.collection('userregistrations', function (err, collection) {
+        collection.find({ email: email}).toArray(function (err, items) {
+            return callback(null, items[0]);
+        });
+    });
 };
 
-function validateUser(username, category, callback) {
-    return validate(username, null, category, callback);
+function validateUser(email, callback) {
+    return validate(email, callback);
 };
 // private method
 function genToken(user) {
