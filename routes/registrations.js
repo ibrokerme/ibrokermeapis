@@ -2,7 +2,8 @@ var registries = {
     addregistration: addregistration,
     getretrievedpassword: getretrievedpassword,
     addusers: addusers,
-    getuser: getuser
+    getuser: getuser,
+    changeuserpassword:changeuserpassword
 }
 function getretrievedpassword(req, res) {
     var email = req.params.email;
@@ -184,29 +185,42 @@ function addusers(req, res) {
 
 }
 function getuser(req, res) {
-    var userregid = req.params.userregid;
-
-    db.collection('users', function (err, collection) {
-        collection.find({ _id: new ObjectID(userregid)} ).toArray(function (err, output) {
-            if (err) {
-                res.send('user not found!!');
-            } else if (teacherresult[0] != '' && typeof (teacherresult[0] != 'undefined')) {
-                db.collection('schoolteachernewsletterscollection', function (err, collection) {
-                    collection.find({
-                        teacherid: new ObjectID(teacherresult[0]._id), dateadded: dateadded, level: level
-                    }).toArray(function (err, result) {
-                        if (err) {
-                            res.send({ 'error': 'An error has occurred' });
-                        } else {
-                            res.send(JSON.stringify(result));
-                        }
-                    });
-                })
-            }
+    try {
+        var userregid = req.params.userregid || '';
+        db.collection('users', function (err, collection) {
+            collection.find({ _id: new ObjectID(userregid) }).toArray(function (err, output) {
+                if (err) {
+                    res.send('user not found!!');
+                } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
+                    res.send(JSON.stringify(output));
+                }
+            })
         })
-    })
+    }
+    catch (err) {
+        res.status(500).send("error has occurred");
+    }
+}
+function changeuserpassword(req, res) {
+    try {
+        var userregid = req.params.userregid || '';
+        var oldpassword = req.params.oldpassword || '';
+        var newpassword = req.params.newpassword || '';
+        db.collection('userregistrations', function (err, collection) {
+            collection.update({ _id: new ObjectID(userregid), password: oldpassword }, {
+                $set: {
+                   password: newpassword
+                }
+            });
+        })
+    }
+    catch (err) {
+        res.status(500).send("error has occurred");
+    }
+
 
 }
+
 module.exports = registries;
 
 
