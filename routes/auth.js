@@ -2,6 +2,7 @@ var jwt = require('jwt-simple');
 var auth = {
     login: login,
     validateUser: validateUser
+<<<<<<< HEAD
 
 }
 
@@ -13,8 +14,18 @@ function login(req, res) {
         var username = data.username || '';
         var password = data.password || '';
         var category = data.category || '';
+=======
 
-        if (username == '' || password == '') {
+}
+function login(req, res) {
+    var form = new formidable.IncomingForm();
+    form.parse(req, function (err, data) {
+        var email = data.email || '';
+        var password = data.password || '';
+
+>>>>>>> 2349071da122285f6850e621208161326f44fc6b
+
+        if (email == '' || password == '') {
             res.status(401);
             res.json({
                 "status": 401,
@@ -24,7 +35,11 @@ function login(req, res) {
         }
 
         // Fire a query to your DB and check if the credentials are valid
+<<<<<<< HEAD
         validate(username, password, category, function (err, output) {
+=======
+        validate(email, function (err, output) {
+>>>>>>> 2349071da122285f6850e621208161326f44fc6b
             if (!output) { // If authentication fails, we send a 401 back
                 res.status(401);
                 res.json({
@@ -45,6 +60,7 @@ function login(req, res) {
     })
 };
 
+<<<<<<< HEAD
 function validate(username, password, category, callback) {
     switch (category) {
         case 'school':
@@ -92,6 +108,18 @@ function validate(username, password, category, callback) {
 
 function validateUser(username, category, callback) {
     return validate(username, null, category, callback);
+=======
+function validate(email, password, callback) {
+    db.collection('userregistrations', function (err, collection) {
+        collection.find({ email: email}).toArray(function (err, items) {
+            return callback(null, items[0]);
+        });
+    });
+};
+
+function validateUser(email, callback) {
+    return validate(email, callback);
+>>>>>>> 2349071da122285f6850e621208161326f44fc6b
 };
 // private method
 function genToken(user) {

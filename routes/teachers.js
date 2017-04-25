@@ -1624,8 +1624,12 @@ exports.addtodayteachersubjectassignment = function (req, res) {
                             db.collection('teacherstudentassignmentcollection', function (err, collection) {
                                 collection.update({ status: 'live' }, {
                                     $set: { status: 'done' }
+<<<<<<< HEAD
                                 }
                                 );
+=======
+                                });
+>>>>>>> 2349071da122285f6850e621208161326f44fc6b
                             });
                             var data = fs.readFileSync(targetPath);
                             var image = new Binary(data);

@@ -1,5 +1,8 @@
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2349071da122285f6850e621208161326f44fc6b
 exports.deleteadmin = function (req, res) {
     var id = req.params.id;
 

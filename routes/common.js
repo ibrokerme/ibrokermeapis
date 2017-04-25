@@ -356,5 +356,42 @@ exports.sendemail = function (req, res) {
             }
         });
 }
+<<<<<<< HEAD
+=======
+exports.passwordrecovery = function (mailto, mailusername, password) {
+    var targetPath = path.resolve('./templates/emails/welcome/html.html');
+    var transporter = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+            user: 'g.generics@gmail.com',
+            pass: 'Computer1234567'
+        }
+    });
+
+    var sendPwdReminder = transporter.templateSender({
+        subject: 'Recovered Password',
+        text: 'Hello, {{username}}, Your password is: {{ password }}',
+
+    }, {
+            from: 'g.generics"gmail.com',
+        });
+
+    // use template based sender to send a message
+    sendPwdReminder({
+        to: mailto
+    }, {
+            //  license: maillicense,
+            username: mailusername,
+            password: password
+
+        }, function (err, info) {
+            if (err) {
+                res.send('failed');
+            } else {
+                res.send('done');
+            }
+        });
+}
+>>>>>>> 2349071da122285f6850e621208161326f44fc6b
 
 
