@@ -443,6 +443,8 @@ exports.sendemail = function (req, res) {
             }
         });
 }
+<<<<<<< HEAD
+=======
 exports.passwordrecovery = function (mailto, mailusername, password) {
     var targetPath = path.resolve('./templates/emails/welcome/html.html');
     var transporter = nodemailer.createTransport({
@@ -477,5 +479,6 @@ exports.passwordrecovery = function (mailto, mailusername, password) {
             }
         });
 }
+>>>>>>> 2349071da122285f6850e621208161326f44fc6b
 
 
