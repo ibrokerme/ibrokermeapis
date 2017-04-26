@@ -108,6 +108,7 @@ exports.excelbatchprocessing = function (req, res) {
     });
 
 }
+exports.securememailer = securememailer;
 exports.decode = decode;
 exports.makeid = makeid;
 exports.emailer = emailer;
@@ -312,6 +313,92 @@ function emailer(mailto, schoolname, maillicense, mailusername, mailpassword) {
             } else {
                 console.log('starter pack sent:' + schoolname);
 
+            }
+        });
+}
+function genericmailer(mailto, data, pathtemp, message, ismessage) {
+    try {
+        var sendPwdReminder = '';
+        var targetPath = pathtemp;// path.resolve('./templates/emails/welcome/html.html');
+        var transporter = nodemailer.createTransport({
+            service: 'Gmail',
+            auth: {
+                user: 'g.generics@gmail.com',
+                pass: 'Computer1234567'
+            }
+        });
+        if (ismessage) {
+            sendPwdReminder = transporter.templateSender({
+                subject: 'Assigned SecureMe',
+                text: 'Hello, {{data}}, Your password is: {{ data }}',
+
+            }, {
+                    from: 'g.generics"gmail.com',
+                });
+        }
+        else {
+            sendPwdReminder = transporter.templateSender({
+                subject: 'Assigned SecureMe',
+                html: fs.readFileSync(targetPath),
+            }, {
+                    from: 'g.generics"gmail.com',
+                });
+        }
+
+
+        // use template based sender to send a message
+        sendPwdReminder({
+            to: mailto
+        }, {
+                data: data
+
+            }, function (err, info) {
+                if (err) { } else { }
+            });
+    }
+    catch (err) {
+        // find and use error logger paper rail.
+    }
+
+}
+exports.sendemail = function (req, res) {
+    var mailto = req.params.mail;
+    var mailschool = req.params.schoolname;
+    var maillicense = req.params.license;
+    var mailusername = req.params.username;
+    var mailpassword = req.params.passcode;
+    var targetPath = path.resolve('./templates/emails/welcome/html.html');
+    var transporter = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+            user: 'g.generics@gmail.com',
+            pass: 'Computer1234567'
+        }
+    });
+
+    var sendPwdReminder = transporter.templateSender({
+        subject: mailschool + 'Starter Pack!',
+        //  text: 'Hello, {{username}}, Your password is: {{ password }}',
+        html: fs.readFileSync(targetPath),
+    }, {
+            from: 'g.generics"gmail.com',
+        });
+
+    // use template based sender to send a message
+    sendPwdReminder({
+        to: mailto
+    }, {
+            school: mailschool,
+            license: maillicense,
+            username: mailusername,
+            passwordpassphrase: mailpassword
+        }, function (err, info) {
+            if (err) {
+                console.log('Error');
+                res.send('failed');
+            } else {
+                console.log('starter pack sent');
+                res.send('done');
             }
         });
 }

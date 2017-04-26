@@ -3,7 +3,8 @@ var registries = {
     getretrievedpassword: getretrievedpassword,
     addusers: addusers,
     getuser: getuser,
-    changeuserpassword:changeuserpassword
+    changeuserpassword: changeuserpassword,
+    unlockuserscreen:unlockuserscreen
 }
 function getretrievedpassword(req, res) {
     var email = req.params.email;
@@ -209,9 +210,30 @@ function changeuserpassword(req, res) {
         db.collection('userregistrations', function (err, collection) {
             collection.update({ _id: new ObjectID(userregid), password: oldpassword }, {
                 $set: {
-                   password: newpassword
+                    password: newpassword
                 }
             });
+        })
+    }
+    catch (err) {
+        res.status(500).send("error has occurred");
+    }
+}
+function unlockuserscreen(req, res) {
+    try {
+        var userregid = req.params.userregid || '';
+        var password = req.params.password || '';
+        db.collection('userregistrations', function (err, collection) {
+            collection.find({
+                _id: new ObjectID(userregid).toArray(function (err, output) {
+                    if (err) {
+                        res.send('user not found!!');
+                    } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
+                        res.send(JSON.stringify(output));
+                    }
+                })
+
+            })
         })
     }
     catch (err) {
@@ -220,7 +242,6 @@ function changeuserpassword(req, res) {
 
 
 }
-
 module.exports = registries;
 
 
