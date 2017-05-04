@@ -1,7 +1,12 @@
-var xlsx = require('xlsx');
-var xlsjs = require('xlsjs');
-var nodexlsx = require('node-xlsx');
-
+const xlsx = require('xlsx');
+const xlsjs = require('xlsjs');
+const nodexlsx = require('node-xlsx');
+const mailer = require("nodemailer");
+const Mailgun = require('mailgun-js');
+const mg = require('nodemailer-mailgun-transport');
+const nodemailer = require('nodemailer');
+const sendgrid = require('sendgrid')('jideboris', 'computer123');
+const EmailTemplates = require('email-templates').EmailTemplate; 
 
 exports.excelbatchprocessing = function (req, res) {
     var form = new formidable.IncomingForm();
@@ -108,7 +113,7 @@ exports.excelbatchprocessing = function (req, res) {
     });
 
 }
-exports.securememailer = securememailer;
+ 
 exports.decode = decode;
 exports.makeid = makeid;
 exports.emailer = emailer;
@@ -247,7 +252,6 @@ function decode(input) {
 
     return output;
 };
-
 function gettodaydate() {
     var today = new Date();
     var dd = today.getUTCDate();
@@ -316,7 +320,8 @@ function emailer(mailto, schoolname, maillicense, mailusername, mailpassword) {
             }
         });
 }
-function genericmailer(mailto, data, pathtemp, message, ismessage) {
+function genericmailer(mailto, data, pathtemp, message, filename, attachmentfilepath, messagetype, callback) {
+    const fromaddress = 'g.generics"gmail.com';
     try {
         var sendPwdReminder = '';
         var targetPath = pathtemp;// path.resolve('./templates/emails/welcome/html.html');
@@ -327,25 +332,40 @@ function genericmailer(mailto, data, pathtemp, message, ismessage) {
                 pass: 'Computer1234567'
             }
         });
-        if (ismessage) {
+        if (messagetype === 'passwordrecovery') {
             sendPwdReminder = transporter.templateSender({
                 subject: 'Assigned SecureMe',
-                text: 'Hello, {{data}}, Your password is: {{ data }}',
-
+                text: 'Hello, {{data}}, Your password is: {{ data }}'
             }, {
-                    from: 'g.generics"gmail.com',
+                    from: fromaddress,
                 });
         }
-        else {
+        else if (messagetype === 'asignedsecureme') {
             sendPwdReminder = transporter.templateSender({
                 subject: 'Assigned SecureMe',
+                html: fs.readFileSync(targetPath)
+
+            }, {
+                    from: fromaddress,
+                });
+        }
+        else if (messagetype === 'documentme') {
+            sendPwdReminder = transporter.templateSender({
+                subject: 'Document',
                 html: fs.readFileSync(targetPath),
+                attachments: [{
+                    filename: filename,
+                    content: fs.createReadStream(attachmentfilepath)
+                }]
+
             }, {
-                    from: 'g.generics"gmail.com',
+                    from: fromaddress,
                 });
+
         }
+        else{
 
-
+        }
         // use template based sender to send a message
         sendPwdReminder({
             to: mailto
@@ -355,6 +375,7 @@ function genericmailer(mailto, data, pathtemp, message, ismessage) {
             }, function (err, info) {
                 if (err) { } else { }
             });
+        return callback("done");
     }
     catch (err) {
         // find and use error logger paper rail.
@@ -402,49 +423,6 @@ exports.sendemail = function (req, res) {
             }
         });
 }
-exports.sendemail = function (req, res) {
-    var mailto = req.params.mail;
-    var mailschool = req.params.schoolname;
-    var maillicense = req.params.license;
-    var mailusername = req.params.username;
-    var mailpassword = req.params.passcode;
-    var targetPath = path.resolve('./templates/emails/welcome/html.html');
-    var transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        auth: {
-            user: 'g.generics@gmail.com',
-            pass: 'Computer1234567'
-        }
-    });
-
-    var sendPwdReminder = transporter.templateSender({
-        subject: mailschool + 'Starter Pack!',
-        //  text: 'Hello, {{username}}, Your password is: {{ password }}',
-        html: fs.readFileSync(targetPath),
-    }, {
-            from: 'g.generics"gmail.com',
-        });
-
-    // use template based sender to send a message
-    sendPwdReminder({
-        to: mailto
-    }, {
-            school: mailschool,
-            license: maillicense,
-            username: mailusername,
-            passwordpassphrase: mailpassword
-        }, function (err, info) {
-            if (err) {
-                console.log('Error');
-                res.send('failed');
-            } else {
-                console.log('starter pack sent');
-                res.send('done');
-            }
-        });
-}
-<<<<<<< HEAD
-=======
 exports.passwordrecovery = function (mailto, mailusername, password) {
     var targetPath = path.resolve('./templates/emails/welcome/html.html');
     var transporter = nodemailer.createTransport({
@@ -479,6 +457,6 @@ exports.passwordrecovery = function (mailto, mailusername, password) {
             }
         });
 }
->>>>>>> 2349071da122285f6850e621208161326f44fc6b
+ 
 
 

@@ -104,18 +104,20 @@ function assignsecureme(req, res) {
         var securemeid = req.params.securemeid || '';
         var userid = req.params.userid || '';
         var mailto = req.params.mailto || '';
-        var ismessage = req.params.ismessage || '';
         var message = req.params.message || '';
         var pathtemp = path.resolve('./templates/emails/welcome/html.html');
 
-        var ismessage = true;
         db.collection('secureme', function (err, collection) {
             collection.find({ _id: new ObjectID(securemeid), userid: new object(userid) }).toArray(function (err, output) {
                 if (err) {
                     res.send('secureme not found!!');
                 } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
-                    common.genericmailer(mailto, output[0], pathtemp, message, ismessage);
-                    res.send(JSON.stringify(output[0]));
+                    common.genericmailer(mailto, output[0], pathtemp, message, '', '', 'asignedsecureme', (outcome) => {
+                        if (outcome === 'done') {
+                            res.send(JSON.stringify(output[0]));
+                        }
+                    });
+
                 }
             })
         })

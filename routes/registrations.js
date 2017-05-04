@@ -1,3 +1,4 @@
+var mv = require('mv');
 var registries = {
     addregistration: addregistration,
     getretrievedpassword: getretrievedpassword,
@@ -121,7 +122,7 @@ function addusers(req, res) {
 
         try {
             if (targetPath != '' && tempPath != '') {
-                fs.rename(tempPath, targetPath, function (err) {
+                mv(tempPath, targetPath, function (err) {
                     if (err) {
                         throw err
                     }
