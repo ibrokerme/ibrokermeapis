@@ -9,8 +9,6 @@ function login(req, res) {
     form.parse(req, function (err, data) {
         var email = data.email || '';
         var password = data.password || '';
- 
-
         if (email == '' || password == '') {
             res.status(401);
             res.json({
@@ -20,8 +18,6 @@ function login(req, res) {
             return;
         }
 
-        
- 
         validate(email, function (err, output) {
  
             if (!output) { // If authentication fails, we send a 401 back

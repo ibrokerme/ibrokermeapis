@@ -5,7 +5,7 @@ var registries = {
     addusers: addusers,
     getuser: getuser,
     changeuserpassword: changeuserpassword,
-    unlockuserscreen:unlockuserscreen
+    unlockuserscreen: unlockuserscreen
 }
 function getretrievedpassword(req, res) {
     var email = req.params.email;
@@ -45,26 +45,31 @@ function getretrievedpassword(req, res) {
         res.send('error occured' + err);
     }
 }
+ 
 function addregistration(req, res) {
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, fields) {
         var dateadded = common.gettodaydate();
+
         var username = fields.username;
         var gender = fields.gender;
         var email = fields.email;
         var dateofbirth = fields.dateofbirth;
         var password = fields.password;
-        var termsandconditionschecked = fields.termsandconditionschecked;
+        var termsandconditionschecked = fields.termsaccepted;
 
         try {
-            db.collection('userregistrations', function (err, collection) {
-                collection.find({ email: email }).toArray(function (err, regresult) {
+            db.collection('userregistrations', function (err, userregistrations) {
+                userregistrations.find({ email: email }).toArray(function (err, regresult) {
                     if (err) {
+                        console.log("here");
                         res.status(500).send(err);
-                    } else if (regresult[0] != '' && typeof (regresult[0] != 'undefined')) {
+                    } else if (typeof (regresult[0]) !=='undefined') {
+                        console.log(regresult[0]);
                         res.send('Email already used');
                     }
                     else {
+                        console.log("here2");
                         db.collection('userregistrations', function (err, userregistrations) {
                             userregistrations.insert({
                                 username: username,
@@ -76,9 +81,9 @@ function addregistration(req, res) {
 
                             }, { safe: true }, function (err, result) {
                                 if (err) {
-                                    res.send({ status: 'failed to safe user' });
+                                    res.send('error');
                                 } else {
-                                    res.send('user inserted sucessfully');
+                                    res.send(result).end();
                                 }
 
                             });
@@ -91,6 +96,9 @@ function addregistration(req, res) {
         }
         catch (err) {
             res.status(500).send("error has occurred");
+        }
+        finally{
+            
         }
     })
 
