@@ -62,14 +62,11 @@ function addregistration(req, res) {
             db.collection('userregistrations', function (err, userregistrations) {
                 userregistrations.find({ email: email }).toArray(function (err, regresult) {
                     if (err) {
-                        console.log("here");
                         res.status(500).send(err);
                     } else if (typeof (regresult[0]) !=='undefined') {
-                        console.log(regresult[0]);
                         res.send('Email already used');
                     }
                     else {
-                        console.log("here2");
                         db.collection('userregistrations', function (err, userregistrations) {
                             userregistrations.insert({
                                 username: username,

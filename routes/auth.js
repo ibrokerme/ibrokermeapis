@@ -3,7 +3,7 @@ var auth = {
     login: login,
     validateUser: validateUser
 }
- 
+
 function login(req, res) {
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, data) {
@@ -19,17 +19,16 @@ function login(req, res) {
         }
 
         validate(email, function (err, output) {
- 
+
             if (!output) { // If authentication fails, we send a 401 back
                 res.status(401);
                 res.json({
                     "status": 401,
                     "message": "Invalid credentials"
                 });
-                return;
+                 return;
             }
-
-            if (output) {
+            else {
 
                 // If authentication is success, we will generate a token
                 // and dispatch it to the client
@@ -40,9 +39,9 @@ function login(req, res) {
     })
 };
 
-function validate(email, password, callback) {
+function validate(email, callback) {
     db.collection('userregistrations', function (err, collection) {
-        collection.find({ email: email}).toArray(function (err, items) {
+        collection.find({ email: email }).toArray(function (err, items) {
             return callback(null, items[0]);
         });
     });
@@ -50,7 +49,7 @@ function validate(email, password, callback) {
 
 function validateUser(email, callback) {
     return validate(email, callback);
- 
+
 };
 // private method
 function genToken(user) {
@@ -62,7 +61,7 @@ function genToken(user) {
     return {
         token: token,
         expires: expires,
-        user: user
+        user: { userid: user._id, email: user.email }
     };
 }
 
