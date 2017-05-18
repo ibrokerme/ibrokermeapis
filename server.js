@@ -66,7 +66,6 @@ var secureme = require('./routes/secureme');
 var auth = require('./routes/auth');
 var version = '/api/v1/';
 
-common = require('./routes/common');
 
 
 var app = express();

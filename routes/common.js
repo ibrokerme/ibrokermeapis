@@ -6,7 +6,7 @@ const Mailgun = require('mailgun-js');
 const mg = require('nodemailer-mailgun-transport');
 const nodemailer = require('nodemailer');
 const sendgrid = require('sendgrid')('jideboris', 'computer123');
-const EmailTemplates = require('email-templates').EmailTemplate; 
+const EmailTemplates = require('email-templates').EmailTemplate;
 
 exports.excelbatchprocessing = function (req, res) {
     var form = new formidable.IncomingForm();
@@ -113,7 +113,7 @@ exports.excelbatchprocessing = function (req, res) {
     });
 
 }
- 
+
 exports.decode = decode;
 exports.makeid = makeid;
 exports.emailer = emailer;
@@ -122,6 +122,8 @@ exports.gettodaydate = gettodaydate;
 exports.comparedate = comparedate;
 exports.validateemail = validateemail;
 exports.validatedate = validatedate;
+exports.genericmailer = genericmailer;
+
 
 function validatedate(dateitem) {
     var dobpattern = /^([0-9]{2})\/([0-9]{2})\/([0-9]{4})$/;
@@ -320,19 +322,45 @@ function emailer(mailto, schoolname, maillicense, mailusername, mailpassword) {
             }
         });
 }
-function genericmailer(mailto, data, pathtemp, message, filename, attachmentfilepath, messagetype, callback) {
-    const fromaddress = 'g.generics"gmail.com';
+
+function genericmailer(mailto, data, pathtemp, message, filename, attachmentfilepath, messagetype, loginurl, callback) {
+    const fromaddress = 'team@ibrokerme.com';
+    const emailbody = {};
     try {
         var sendPwdReminder = '';
-        var targetPath = pathtemp;// path.resolve('./templates/emails/welcome/html.html');
-        var transporter = nodemailer.createTransport({
-            service: 'Gmail',
+        const config = {
+            host: 'auth.smtp.1and1.co.uk',
+            // port: 465,
+            // secure: true, // use TLS
+            port: 587,
+            secure: false,
             auth: {
-                user: 'g.generics@gmail.com',
-                pass: 'Computer1234567'
+                user: 'team@ibrokerme.com',
+                pass: '1Brok3rM3team'
+            },
+            tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
             }
-        });
-        if (messagetype === 'passwordrecovery') {
+        };
+
+
+        var transporter = nodemailer.createTransport(config);
+
+        if (messagetype === 'registration') {
+            sendPwdReminder = transporter.templateSender({
+                subject: 'Email validation',
+                html: fs.readFileSync(pathtemp)
+            }, {
+                    from: fromaddress,
+                });
+            emailbody.firstname = data.username;
+            emailbody.email = data.email;
+            emailbody.username = data.username;
+            emailbody.registrationpath = loginurl;
+
+        }
+        else if (messagetype === 'passwordrecovery') {
             sendPwdReminder = transporter.templateSender({
                 subject: 'Assigned SecureMe',
                 text: 'Hello, {{data}}, Your password is: {{ data }}'
@@ -363,19 +391,20 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
                 });
 
         }
-        else{
+        else {
 
         }
+        console.log(emailbody);
         // use template based sender to send a message
         sendPwdReminder({
             to: mailto
-        }, {
-                data: data
-
-            }, function (err, info) {
-                if (err) { } else { }
-            });
-        return callback("done");
+        }, emailbody, function (err, info) {
+            if (err) {
+                return callback(err);
+            } else {
+                return callback(info);
+            }
+        });
     }
     catch (err) {
         // find and use error logger paper rail.
@@ -457,6 +486,6 @@ exports.passwordrecovery = function (mailto, mailusername, password) {
             }
         });
 }
- 
+
 
 

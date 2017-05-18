@@ -1,4 +1,6 @@
 var mv = require('mv');
+const common = require('./common');
+
 var registries = {
     addregistration: addregistration,
     getretrievedpassword: getretrievedpassword,
@@ -45,12 +47,14 @@ function getretrievedpassword(req, res) {
         res.send('error occured' + err);
     }
 }
- 
+
 function addregistration(req, res) {
     var form = new formidable.IncomingForm();
+    const pathtemp = path.resolve('./templates/emails/registration.html');
+    const loginurl = req.protocol + '://' + req.get('host') + '/#/';
+    console.log(loginurl);
     form.parse(req, function (err, fields) {
         var dateadded = common.gettodaydate();
-
         var username = fields.username;
         var gender = fields.gender;
         var email = fields.email;
@@ -63,7 +67,7 @@ function addregistration(req, res) {
                 userregistrations.find({ email: email }).toArray(function (err, regresult) {
                     if (err) {
                         res.status(500).send(err);
-                    } else if (typeof (regresult[0]) !=='undefined') {
+                    } else if (typeof (regresult[0]) !== 'undefined') {
                         res.send('Email already used');
                     }
                     else {
@@ -80,6 +84,10 @@ function addregistration(req, res) {
                                 if (err) {
                                     res.send('error');
                                 } else {
+                                    common.genericmailer(result.ops[0].email, result.ops[0], pathtemp, '', '', '', 'registration', loginurl, function (resp) {
+                                        console.log(resp);
+
+                                    })
                                     res.send(result).end();
                                 }
 
@@ -94,9 +102,7 @@ function addregistration(req, res) {
         catch (err) {
             res.status(500).send("error has occurred");
         }
-        finally{
-            
-        }
+
     })
 
 }
