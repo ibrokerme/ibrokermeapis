@@ -19,14 +19,13 @@ function login(req, res) {
         }
 
         validate(email, function (err, output) {
-
             if (!output) { // If authentication fails, we send a 401 back
                 res.status(401);
                 res.json({
                     "status": 401,
                     "message": "Invalid credentials"
                 });
-                 return;
+                return;
             }
             else {
 
@@ -61,7 +60,7 @@ function genToken(user) {
     return {
         token: token,
         expires: expires,
-        user: { userid: user._id, email: user.email }
+        user: { userid: user._id, email: user.email, username: user.username }
     };
 }
 

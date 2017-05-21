@@ -10,57 +10,62 @@ var registries = {
     unlockuserscreen: unlockuserscreen
 }
 function getretrievedpassword(req, res) {
-    var email = req.params.email;
-    var username = req.params.username;
-    try {
-        if (email != null || email != '' || typeof (email != 'undefined')) {
-            db.collection('userregistrations', function (err, collection) {
-                collection.find({ email: email }).toArray(function (err, output) {
-                    if (err) {
-                        res.send('user not found!!');
-                    } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
-                        //send email with password
-                        var pass = output[0].password;
-                        var username = output[0].username;
-                        common.passwordrecovery(email, username, pass);
-                    }
+    var form = new formidable.IncomingForm();
+    const pathtemp = path.resolve('./templates/emails/recovery.html');
+
+    form.parse(req, function (err, fields) {
+        const name = fields.name;
+        const email = fields.email;
+        try {
+            if (email !== '') {
+                db.collection('userregistrations', function (err, collection) {
+                    collection.find({ email: email }).toArray(function (err, output) {
+                        if (err) {
+                            res.send('user not found!!');
+                        } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
+                            common.genericmailer(output[0].email, output[0], pathtemp, '', '', '', 'recover', '', function (resp) {
+                                res.status(200).send('done');
+                            })
+                        }
+                    })
                 })
-            })
-        }
-        else {
-            db.collection('userregistrations', function (err, collection) {
-                collection.find({ username: username }).toArray(function (err, output) {
-                    if (err) {
-                        res.send('user not found!!');
-                    } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
-                        //send email with password
-                        var pass = output[0].password;
-                        var username = output[0].username;
-                        common.passwordrecovery(email, username, pass);
-                    }
+            }
+            else if (name !== '') {
+                db.collection('userregistrations', function (err, collection) {
+                    collection.find({ username: name }).toArray(function (err, output) {
+                        if (err) {
+                            res.send('user not found!!');
+                        } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
+                            common.genericmailer(output[0].email, output[0], pathtemp, '', '', '', 'recover', '', function (resp) {
+                                res.status(200).send('done');
+                            })
+
+                        }
+                    })
                 })
-            })
+            }
         }
-        res.send('Sent');
-    }
-    catch (err) {
-        res.send('error occured' + err);
-    }
+        catch (err) {
+            res.status(500).send("error has occurred");
+        }
+
+    })
+
 }
 
 function addregistration(req, res) {
     var form = new formidable.IncomingForm();
     const pathtemp = path.resolve('./templates/emails/registration.html');
-    const loginurl = req.protocol + '://' + req.get('host') + '/#/';
-    console.log(loginurl);
+
     form.parse(req, function (err, fields) {
-        var dateadded = common.gettodaydate();
-        var username = fields.username;
-        var gender = fields.gender;
-        var email = fields.email;
-        var dateofbirth = fields.dateofbirth;
-        var password = fields.password;
-        var termsandconditionschecked = fields.termsaccepted;
+        const dateadded = common.gettodaydate();
+        const username = fields.username;
+        const gender = fields.gender;
+        const email = fields.email;
+        const dateofbirth = fields.dateofbirth;
+        const password = fields.password;
+        const termsandconditionschecked = fields.termsaccepted;
+        const loginurl = fields.location;
 
         try {
             db.collection('userregistrations', function (err, userregistrations) {
@@ -85,8 +90,6 @@ function addregistration(req, res) {
                                     res.send('error');
                                 } else {
                                     common.genericmailer(result.ops[0].email, result.ops[0], pathtemp, '', '', '', 'registration', loginurl, function (resp) {
-                                        console.log(resp);
-
                                     })
                                     res.send(result).end();
                                 }

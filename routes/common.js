@@ -114,9 +114,7 @@ exports.excelbatchprocessing = function (req, res) {
 
 }
 
-exports.decode = decode;
-exports.makeid = makeid;
-exports.emailer = emailer;
+ 
 exports.batchvalidator = batchvalidator;
 exports.gettodaydate = gettodaydate;
 exports.comparedate = comparedate;
@@ -204,56 +202,7 @@ function batchvalidator(leng, arr) {
 
     return messages;
 }
-function makeid(schoolnameregnumber) {
-    var text = "";
-    var possible = schoolnameregnumber;
-    for (var i = 0; i < 10; i++)
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-};
-function decode(input) {
-    var keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-    var output = "";
-    var chr1, chr2, chr3 = "";
-    var enc1, enc2, enc3, enc4 = "";
-    var i = 0;
-
-    // remove all characters that are not A-Z, a-z, 0-9, +, /, or =
-    var base64test = /[^A-Za-z0-9\+\/\=]/g;
-    if (base64test.exec(input)) {
-        window.alert("There were invalid base64 characters in the input text.\n" +
-            "Valid base64 characters are A-Z, a-z, 0-9, '+', '/',and '='\n" +
-            "Expect errors in decoding.");
-    }
-    input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-
-    do {
-        enc1 = keyStr.indexOf(input.charAt(i++));
-        enc2 = keyStr.indexOf(input.charAt(i++));
-        enc3 = keyStr.indexOf(input.charAt(i++));
-        enc4 = keyStr.indexOf(input.charAt(i++));
-
-        chr1 = (enc1 << 2) | (enc2 >> 4);
-        chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-        chr3 = ((enc3 & 3) << 6) | enc4;
-
-        output = output + String.fromCharCode(chr1);
-
-        if (enc3 != 64) {
-            output = output + String.fromCharCode(chr2);
-        }
-        if (enc4 != 64) {
-            output = output + String.fromCharCode(chr3);
-        }
-
-        chr1 = chr2 = chr3 = "";
-        enc1 = enc2 = enc3 = enc4 = "";
-
-    } while (i < input.length);
-
-    return output;
-};
+ 
 function gettodaydate() {
     var today = new Date();
     var dd = today.getUTCDate();
@@ -286,42 +235,7 @@ function comparedate(inputdate) {
     }
     return false;
 }
-function emailer(mailto, schoolname, maillicense, mailusername, mailpassword) {
-    var targetPath = path.resolve('./templates/emails/welcome/html.html');
-    var transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        auth: {
-            user: 'g.generics@gmail.com',
-            pass: 'Computer1234567'
-        }
-    });
-
-    var sendPwdReminder = transporter.templateSender({
-        subject: schoolname + 'Starter Pack!',
-        //  text: 'Hello, {{username}}, Your password is: {{ password }}',
-        html: fs.readFileSync(targetPath),
-    }, {
-            from: 'g.generics"gmail.com',
-        });
-
-    // use template based sender to send a message
-    sendPwdReminder({
-        to: mailto
-    }, {
-            school: schoolname,
-            license: maillicense,
-            username: mailusername,
-            passwordpassphrase: mailpassword
-        }, function (err, info) {
-            if (err) {
-                console.log('Error');
-
-            } else {
-                console.log('starter pack sent:' + schoolname);
-
-            }
-        });
-}
+ 
 
 function genericmailer(mailto, data, pathtemp, message, filename, attachmentfilepath, messagetype, loginurl, callback) {
     const fromaddress = 'team@ibrokerme.com';
@@ -360,13 +274,17 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
             emailbody.registrationpath = loginurl;
 
         }
-        else if (messagetype === 'passwordrecovery') {
+        else if (messagetype === 'recover') {
             sendPwdReminder = transporter.templateSender({
-                subject: 'Assigned SecureMe',
-                text: 'Hello, {{data}}, Your password is: {{ data }}'
+                subject: 'Recovered Password',
+                 html: fs.readFileSync(pathtemp)
             }, {
                     from: fromaddress,
                 });
+            emailbody.firstname = data.username;
+            emailbody.password = data.password;
+            emailbody.username = data.username;
+            
         }
         else if (messagetype === 'asignedsecureme') {
             sendPwdReminder = transporter.templateSender({
@@ -394,7 +312,6 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
         else {
 
         }
-        console.log(emailbody);
         // use template based sender to send a message
         sendPwdReminder({
             to: mailto
@@ -411,81 +328,7 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
     }
 
 }
-exports.sendemail = function (req, res) {
-    var mailto = req.params.mail;
-    var mailschool = req.params.schoolname;
-    var maillicense = req.params.license;
-    var mailusername = req.params.username;
-    var mailpassword = req.params.passcode;
-    var targetPath = path.resolve('./templates/emails/welcome/html.html');
-    var transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        auth: {
-            user: 'g.generics@gmail.com',
-            pass: 'Computer1234567'
-        }
-    });
 
-    var sendPwdReminder = transporter.templateSender({
-        subject: mailschool + 'Starter Pack!',
-        //  text: 'Hello, {{username}}, Your password is: {{ password }}',
-        html: fs.readFileSync(targetPath),
-    }, {
-            from: 'g.generics"gmail.com',
-        });
-
-    // use template based sender to send a message
-    sendPwdReminder({
-        to: mailto
-    }, {
-            school: mailschool,
-            license: maillicense,
-            username: mailusername,
-            passwordpassphrase: mailpassword
-        }, function (err, info) {
-            if (err) {
-                console.log('Error');
-                res.send('failed');
-            } else {
-                console.log('starter pack sent');
-                res.send('done');
-            }
-        });
-}
-exports.passwordrecovery = function (mailto, mailusername, password) {
-    var targetPath = path.resolve('./templates/emails/welcome/html.html');
-    var transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        auth: {
-            user: 'g.generics@gmail.com',
-            pass: 'Computer1234567'
-        }
-    });
-
-    var sendPwdReminder = transporter.templateSender({
-        subject: 'Recovered Password',
-        text: 'Hello, {{username}}, Your password is: {{ password }}',
-
-    }, {
-            from: 'g.generics"gmail.com',
-        });
-
-    // use template based sender to send a message
-    sendPwdReminder({
-        to: mailto
-    }, {
-            //  license: maillicense,
-            username: mailusername,
-            password: password
-
-        }, function (err, info) {
-            if (err) {
-                res.send('failed');
-            } else {
-                res.send('done');
-            }
-        });
-}
 
 
 

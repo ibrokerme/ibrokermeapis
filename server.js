@@ -102,7 +102,7 @@ app.all('/api/v1/*', [require('./middlewares/validaterequest')]);
 app.post('/login', auth.login);
 
 app.post('/userregistration', registrations.addregistration);
-//  app.get(version + 'subjecttopics/:selectedsubject', edata.getsubjecttopics);
+app.post('/recoverpassword', registrations.getretrievedpassword);
 
 // If no route is matched by now, it must be a 404
 app.use(function (req, res, next) {
