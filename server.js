@@ -60,11 +60,11 @@ MongoClient.connect(url, function (err, database) {
 });
 
 
-var registrations = require('./routes/registrations');
-var documentme = require('./routes/documentme');
-var secureme = require('./routes/secureme');
-var auth = require('./routes/auth');
-var version = '/api/v1/';
+const registrations = require('./routes/registrations');
+const documentme = require('./routes/documentme');
+const secureme = require('./routes/secureme');
+const auth = require('./routes/auth');
+const version = '/api/v1/';
 
 
 
@@ -80,7 +80,7 @@ app.set('view engine', 'html');
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 // create a write stream (in append mode)
- app.use(logger('dev'));
+app.use(logger('dev'));
 // var accessLogStream = fs.createWriteStream(__dirname + '/access.log', { flags: 'a' });
 // app.use(logger('combined', { stream: accessLogStream }));
 
@@ -103,6 +103,9 @@ app.post('/login', auth.login);
 
 app.post('/userregistration', registrations.addregistration);
 app.post('/recoverpassword', registrations.getretrievedpassword);
+app.post(version + 'whoamidetails', registrations.addusers);
+app.get(version + 'getwhomami/:userid', registrations.getuser);
+app.get(version + 'getwhoamiphoto/:userid', registrations.getuserphoto);
 
 // If no route is matched by now, it must be a 404
 app.use(function (req, res, next) {

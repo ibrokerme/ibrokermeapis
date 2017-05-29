@@ -2,19 +2,12 @@ var jwt = require('jwt-simple');
 var validateUser = require('../routes/auth').validateUser;
 
 module.exports = function (req, res, next) {
-    // When performing a cross domain request, you will recieve
-    // a preflighted request first. This is to check if our the app
-    // is safe. 
-
-    // We skip the token outh for [OPTIONS] requests.
-    //if(req.method == 'OPTIONS') next();
-
-    console.log(req.query.access_token);
-
-    var token = (req.body && req.body.access_token) || (req.query && req.query.access_token) || req.headers['x-access-token'];
-    var key = (req.body && req.body.x_key) || (req.query && req.query.x_key) || req.headers['x-key'];
-console.log(key);
-    if (token || token) {
+    var token = req.headers['x-access-token'];
+    var key = req.headers['x-userid'];
+    var email = req.headers['x-email'];
+    var username = req.headers['x-username'];
+ 
+    if (token) {
         try {
             var decoded = jwt.decode(token, require('../config/secret.js')());
 
@@ -27,9 +20,7 @@ console.log(key);
                 return;
             }
 
-            // Authorize the user to see if s/he can access our resources
-            var category = req.headers['cat'];
-            validateUser(key, category, function (err, response) {
+            validateUser(email, function (err, response) {
                 if (response) {
                     if (req.url.indexOf('admin') >= 0 || (req.url.indexOf('admin') < 0 && req.url.indexOf('/api/v1/') >= 0)) {
                         next(); // To move to next middleware
