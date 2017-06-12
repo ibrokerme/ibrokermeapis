@@ -203,7 +203,6 @@ function addusers(req, res) {
                         fs.unlink(targetPath);
                         if (userregid !== '' && typeof (userregid) !== 'undefined' && targetPath != '' && tempPath != '') {
                             if (Object.keys(photoimage).length > 0) {
-                                console.log('here');
                                 db.collection('whoami', function (err, collection) {
                                     collection.update({ _id: new ObjectID(userregid) }, {
                                         $set: {
@@ -268,7 +267,6 @@ function addusers(req, res) {
 
                                     }
                                 }, function (err, result) {
-                                    console.log(result);
                                     res.send(result);
                                 });
                             });
@@ -332,8 +330,13 @@ function addusers(req, res) {
                                     if (err) {
                                         res.status(501).send(err);
                                     } else {
-                                        const photo = new Buffer(result.ops[0].photoimage.imagedata).toString('base64');
-                                        res.send(photo);
+                                        if (result.ops[0].photoimage !== '') {
+                                            const photo = new Buffer(result.ops[0].photoimage.imagedata).toString('base64');
+                                            res.send(photo);
+                                        }
+                                        else {
+                                            res.send(result.ops[0]);
+                                        }
                                     }
 
                                 });
@@ -435,6 +438,7 @@ function addusers(req, res) {
                 }
                 else {
                     db.collection('whoami', function (err, collection) {
+                        
                         collection.insert({
                             photoimage: photoimage,
                             title: title,
@@ -492,8 +496,13 @@ function addusers(req, res) {
                             if (err) {
                                 res.status(501).send(err);
                             } else {
-                                const photo = new Buffer(result.ops[0].photoimage.imagedata).toString('base64');
-                                res.send(photo);
+                                if (result.ops[0].photoimage !== '') {
+                                    const photo = new Buffer(result.ops[0].photoimage.imagedata).toString('base64');
+                                    res.send(photo);
+                                }
+                                else {
+                                    res.send(result.ops[0]);
+                                }
                             }
 
                         });
@@ -554,16 +563,28 @@ function getuser(req, res) {
 }
 function changeuserpassword(req, res) {
     try {
-        var userregid = req.params.userregid || '';
-        var oldpassword = req.params.oldpassword || '';
-        var newpassword = req.params.newpassword || '';
-        db.collection('userregistrations', function (err, collection) {
-            collection.update({ _id: new ObjectID(userregid), password: oldpassword }, {
-                $set: {
-                    password: newpassword
-                }
+        var form = new formidable.IncomingForm();
+        form.parse(req, function (err, fields) {
+            const dateadded = common.gettodaydate();
+            const oldpass = fields.oldpass;
+            const newpass = fields.newpass;
+            const old = common.decode(oldpass);
+            const newp = common.decode(newpass);
+            const userid = fields.userid;
+
+            db.collection('userregistrations', function (err, collection) {
+                collection.update({ _id: new ObjectID(userid), password: old }, {
+                    $set: {
+                        password: newp
+                    }
+                }, function (resp) {
+                    res.send(resp);
+                });
             });
+
         })
+
+
     }
     catch (err) {
         res.status(500).send("error has occurred");

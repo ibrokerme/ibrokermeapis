@@ -106,6 +106,16 @@ app.post('/recoverpassword', registrations.getretrievedpassword);
 app.post(version + 'whoamidetails', registrations.addusers);
 app.get(version + 'getwhomami/:userid', registrations.getuser);
 app.get(version + 'getwhoamiphoto/:userid', registrations.getuserphoto);
+app.post(version + 'updatepassword', registrations.changeuserpassword);
+app.post(version + 'adddocument', documentme.uploaddocument);
+// app.post(version + 'adddocument', documentme.uploadotherdocument);
+app.get(version + 'getdocuments/:userid', documentme.getdocuments);
+app.post(version + 'getadocument/:userid/:documentid', documentme.getdocumentdata);
+app.get(version + 'getadocumentdetails/:userid/:documentid', documentme.getdocumentdetails);
+app.post(version + 'getadocumentimage/:userid/:documentid', documentme.getdocumentimage);
+app.get(version + 'deletedocumentimage/:userid/:documentid', documentme.removedocumentimage);
+
+ 
 
 // If no route is matched by now, it must be a 404
 app.use(function (req, res, next) {
