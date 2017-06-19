@@ -256,14 +256,14 @@ function pipedoc(inputPath, finaltype, stream) {
     //     });
 
     // });
-   
+
 
     office(inputPath).then(
-          ()  =>  {
-                console.log("OK")
-          },  (err)  =>  {
-                console.log(err)
-          }
+        () => {
+            console.log("OK")
+        }, (err) => {
+            console.log(err)
+        }
     )
 }
 
@@ -286,7 +286,7 @@ function getdocumentimage(req, res) {
                                 if (err) {
                                     res.send(err);
                                 }
-                               // pipedoc(targetPath, 'html', res);
+                                // pipedoc(targetPath, 'html', res);
                                 var filestream = fs.createReadStream(targetPath);
                                 filestream.pipe(res);
                                 fs.unlink(targetPath);
@@ -367,29 +367,46 @@ function deletedocument(req, res) {
     }
 }
 function emaildocument(req, res) {
-    var userid = req.params.userid || '';
-    var docid = req.params.docid || '';
-    var mailto = req.params.mailto || '';
-    var message = req.params.message || '';
-    var pathtemp = path.resolve('./templates/emails/welcome/html.html');
-    try {
-        db.collection('documentme', function (err, collection) {
-            collection.find({ userid: new ObjectID(userid), _id: new ObjectID(docid) }).toArray(function (err, output) {
-                if (err) {
-                    res.status(500).send(err);
-                } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
-                    var data = output[0];
-                    common.genericmailer(mailto, '', pathtemp, message, '', '', 'documentme', (outcome) => {
-                        if (outcome === 'done') {
-                            res.send('Document emailed!');
+    var message = req.body;
+    message.cc = [];
+    var pathtemp = path.resolve('./templates/emails/docattachment.html');
+    db.collection('documentme', function (err, collection) {
+        collection.find({ userid: message.userid, _id: new ObjectID(message.documentid) }).toArray(function (err, output) {
+            if (err) {
+                res.status(500).send(err);
+            } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
+                db.collection('userregistrations', function (err, userregistrations) {
+                    userregistrations.find({ _id: new ObjectID(message.userid) }).toArray(function (err, fromuser) {
+                        if (err) {
+                            res.status(500).send(err);
                         }
-                    });
-                }
-            })
+                        else if (fromuser[0] != '' && typeof (fromuser[0] != 'undefined')) {
+                            data = output[0];
+
+                            if (message.emailcopy && fromuser.length > 0) {
+                                message.cc.push(fromuser[0].email)
+                            }
+                            common.genericmailer(message.email, data, pathtemp, message, '', '', 'documentme', '', (outcome) => {
+                                if (outcome.rejected.length === 0) {
+                                    res.send('Document emailed!');
+                                }
+                            });
+                        }
+
+                    })
+                })
+            }
         })
-    }
-    catch (err) {
-        res.status(500).send("error has occurred");
-    }
+    })
 }
+
+
+
+
+//     // }
+//     // catch (err) {
+//     //     res.status(500).send("error has occurred");
+//     // }
+// })
+
 module.exports = documentme;

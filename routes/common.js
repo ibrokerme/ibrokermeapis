@@ -7,6 +7,7 @@ const mg = require('nodemailer-mailgun-transport');
 const nodemailer = require('nodemailer');
 const sendgrid = require('sendgrid')('jideboris', 'computer123');
 const EmailTemplates = require('email-templates').EmailTemplate;
+const handlebars = require('handlebars');
 
 exports.excelbatchprocessing = function (req, res) {
     var form = new formidable.IncomingForm();
@@ -122,6 +123,17 @@ exports.validateemail = validateemail;
 exports.validatedate = validatedate;
 exports.genericmailer = genericmailer;
 exports.decode = decode;
+var readHTMLFile = function (path, callback) {
+    fs.readFile(path, { encoding: 'utf-8' }, function (err, html) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, html);
+        }
+    });
+};
+
 
 function decode(input) {
     var keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
@@ -280,7 +292,7 @@ function comparedate(inputdate) {
 
 
 function genericmailer(mailto, data, pathtemp, message, filename, attachmentfilepath, messagetype, loginurl, callback) {
-    const fromaddress = 'team@ibrokerme.com';
+    const fromaddress = 'webmaster@ibrokerme.com';
     const emailbody = {};
     try {
         var sendPwdReminder = '';
@@ -291,42 +303,70 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
             port: 587,
             secure: false,
             auth: {
-                user: 'team@ibrokerme.com',
-                pass: '1Brok3rM3team'
+                user: 'webmaster@ibrokerme.com',
+                pass: '1Brok3rM3wm'
             },
             tls: {
                 // do not fail on invalid certs
                 rejectUnauthorized: false
             }
         };
+        emailbody.firstname = 'jideboris';
 
-
-        var transporter = nodemailer.createTransport(config);
+        var transporter = nodemailer.createTransport(config, emailbody);
 
         if (messagetype === 'registration') {
-            sendPwdReminder = transporter.templateSender({
-                subject: 'Email validation',
-                html: fs.readFileSync(pathtemp)
-            }, {
-                    from: fromaddress,
-                });
-            emailbody.firstname = data.username;
-            emailbody.email = data.email;
-            emailbody.username = data.username;
-            emailbody.registrationpath = loginurl;
+            readHTMLFile(pathtemp, function (err, html) {
+                let template = handlebars.compile(html);
+                let replacements = {
+                    firstname: data.username,
+                    email: data.email,
+                    username: data.username,
+                    registrationpath:loginurl
 
+                };
+                let htmlToSend = template(replacements);
+                let mailOptions = {
+                    from: fromaddress,
+                    to: mailto,
+                    subject:  'Email validation',
+                    html: htmlToSend
+
+                };
+                transporter.sendMail(mailOptions, function (error, response) {
+                    if (error) {
+                        return callback(error);
+                    } else {
+                        return callback(response);
+                    }
+                });
+            });
         }
         else if (messagetype === 'recover') {
-            sendPwdReminder = transporter.templateSender({
-                subject: 'Recovered Password',
-                html: fs.readFileSync(pathtemp)
-            }, {
-                    from: fromaddress,
-                });
-            emailbody.firstname = data.username;
-            emailbody.password = data.password;
-            emailbody.username = data.username;
+            readHTMLFile(pathtemp, function (err, html) {
+                let template = handlebars.compile(html);
+                let replacements = {
+                    firstname: data.username,
+                    password: data.password,
+                    username: data.username
 
+                };
+                let htmlToSend = template(replacements);
+                let mailOptions = {
+                    from: fromaddress,
+                    to: mailto,
+                    subject: 'Recovered Password',
+                    html: htmlToSend
+
+                };
+                transporter.sendMail(mailOptions, function (error, response) {
+                    if (error) {
+                        return callback(error);
+                    } else {
+                        return callback(response);
+                    }
+                });
+            });
         }
         else if (messagetype === 'asignedsecureme') {
             sendPwdReminder = transporter.templateSender({
@@ -338,35 +378,55 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
                 });
         }
         else if (messagetype === 'documentme') {
-            sendPwdReminder = transporter.templateSender({
-                subject: 'Document',
-                html: fs.readFileSync(targetPath),
-                attachments: [{
-                    filename: filename,
-                    content: fs.createReadStream(attachmentfilepath)
-                }]
+            readHTMLFile(pathtemp, function (err, html) {
+                let template = handlebars.compile(html);
+                let replacements = {
+                    fullname: message.fullname,
+                    emailmessage: message.emailmessage,
+                    subject: message.subject
 
-            }, {
+                };
+                let htmlToSend = template(replacements);
+                let mailOptions = {
                     from: fromaddress,
-                });
+                    to: mailto,
+                    subject: message.subject,
+                    html: htmlToSend,
+                    cc: message.cc.length > 0 ? message.cc : [],
+                    attachments: [
+                        {
+                            filename: data.filename,
+                            content: new Buffer(data.document.imagedata.buffer)
+                        }]
 
+                };
+                transporter.sendMail(mailOptions, function (error, response) {
+                    if (error) {
+                        return callback(error);
+                    } else {
+                        return callback(response);
+                    }
+                });
+            });
         }
         else {
 
         }
         // use template based sender to send a message
-        sendPwdReminder({
-            to: mailto
-        }, emailbody, function (err, info) {
-            if (err) {
-                return callback(err);
-            } else {
-                return callback(info);
-            }
-        });
+        // sendPwdReminder({
+        //     to: mailto
+        // }, emailbody, function (err, info) {
+        //     console.log('--------------here')
+        //     console.log(err)
+        //     if (err) {
+        //         return callback(err);
+        //     } else {
+        //         return callback(info);
+        //     }
+        // });
     }
     catch (err) {
-        // find and use error logger paper rail.
+        return err;
     }
 
 }

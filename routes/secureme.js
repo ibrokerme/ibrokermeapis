@@ -22,64 +22,62 @@ function getsecureme(req, res) {
     }
 }
 function addsecureme(req, res) {
-    var form = new formidable.IncomingForm();
-    form.parse(req, function (err, fields) {
-        var dateadded = common.gettodaydate();
-        var userid = fields.userid;
-        var urldata = fields.url;
-        var username = fields.username;
-        var password = fields.password;
-        var comment = fields.comment;
-        var secureid = fields.comment;
+    var dateadded = common.gettodaydate();
+    var secureme = req.body;
+    var myurl = secureme.myurl;
+    var username = secureme.username;
+    var password = secureme.password;
+    var info = secureme.info;
+    var userid = secureme.userid;
+    var securemeid = secureme.securemeid;
+    try {
+        if (securemeid === '0') {
+            db.collection('secureme', function (err, secureme) {
+                secureme.insert({
+                    url: myurl,
+                    username: username,
+                    password: password,
+                    comment: info,
+                    userid: userid,
+                    dateadded: dateadded
 
-        try {
-            if (secureid === '0') {
-                db.collection('secureme', function (err, secureme) {
-                    secureme.insert({
-                        url: urldata,
-                        username: username,
-                        password: password,
-                        comment: comment,
-                        userid: userid,
-                        dateadded: dateadded
+                }, { safe: true }, function (err, result) {
+                    if (err) {
+                        res.send({ status: 'failed to safe secureme' });
+                    } else {
+                        res.send(result);
+                    }
 
-                    }, { safe: true }, function (err, result) {
-                        if (err) {
-                            res.send({ status: 'failed to safe secureme' });
-                        } else {
-                            res.send('secureme inserted sucessfully');
-                        }
-
-                    });
                 });
-            }
-            else {
-                db.collection('secureme', function (err, collection) {
-                    collection.find({ userid: new ObjectID(userid), _id: new object(secureid) }).toArray(function (err, output) {
-                        if (err) {
-                            res.status(500).send(err);
-                        } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
-                            collection.update({ _id: new ObjectID(secureid) }, {
-                                $set: {
-                                    url: urldata,
-                                    username: username,
-                                    password: password,
-                                    comment: comment,
-                                    dateadded: dateadded
-                                }
-                            });
-                        }
+            });
+        }
+        else {
+            db.collection('secureme', function (err, collection) {
+                collection.find({ userid: new ObjectID(userid), _id: new object(securemeid) }).toArray(function (err, output) {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
+                        collection.update({ _id: new ObjectID(securemeid) }, {
+                            $set: {
+                                url: myurl,
+                                username: username,
+                                password: password,
+                                comment: info,
+                                dateadded: dateadded
+                            }
+                        });
+                    }
 
-                    })
                 })
-            }
+            })
         }
-        catch (err) {
-            res.status(500).send("error has occurred");
-        }
-    })
-
+    }
+    catch (err) {
+        res.status(500).send("error has occurred");
+    }
 }
+
+
 function removesecureme(req, res) {
     var securemeid = req.params.securemeid || '';
     var userid = req.params.userid || '';

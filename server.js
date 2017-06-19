@@ -113,6 +113,8 @@ app.get(version + 'getdocuments/:userid', documentme.getdocuments);
 app.post(version + 'getadocument/:userid/:documentid', documentme.getdocumentdata);
 app.get(version + 'getadocumentdetails/:userid/:documentid', documentme.getdocumentdetails);
 app.post(version + 'getadocumentimage/:userid/:documentid', documentme.getdocumentimage);
+app.post(version + 'sendemail', documentme.emaildocument);
+app.post(version + 'savesecureme', documentme.addsecureme);
 app.get(version + 'deletedocumentimage/:userid/:documentid', documentme.removedocumentimage);
 
  
