@@ -23,7 +23,6 @@ exports.excelbatchprocessing = function (req, res) {
             collection.find({ regnumber: identity, schoolpasscode: password }).toArray(function (err, items) {
                 if (items != '') {
                     var clientid = items[0]._id
-                    console.log(clientid);
                     fs.rename(tempPath, targetPath, function (err) {
                         if (err) {
                             console.log(err)
@@ -32,11 +31,7 @@ exports.excelbatchprocessing = function (req, res) {
 
                             var obj = nodexlsx.parse(targetPath);
                             var arr = JSON.parse(JSON.stringify(obj[0]));
-                            console.log(arr["data"].length);
-                            console.log(arr["data"]);
                             var filetype = file.type;
-                            console.log(filetype);
-
                             var headerfullname = arr["data"][0][0];
                             var headerdateofbirth = arr["data"][0][1];
                             var headerlevel = arr["data"][0][2];
@@ -47,7 +42,6 @@ exports.excelbatchprocessing = function (req, res) {
 
                             var output = batchvalidator(arr["data"][0].length, arr["data"]);
                             var dateadded = gettodaydate();
-                            console.log(output);
 
                             if (output.isvalid) {
                                 for (var index = 1; index < arr["data"].length - 1; index++) {
@@ -59,8 +53,7 @@ exports.excelbatchprocessing = function (req, res) {
                                     var parentnumber = arr["data"][index][5];
                                     var subjects = arr["data"][index][6];
                                     var jsonsubjects = JSON.stringify(subjects);
-                                    console.log(jsonsubjects);
-                                    console.log(fullname + '|' + dateofbirth + '|' + level + '|' + personalemail + '|' + parentemail);
+
                                     if (fullname != null && typeof (fullname) != 'undefined') {
                                         var username = fullname.replace(/ /g, "");
                                         var item = username + dateofbirth + personalemail;
@@ -88,31 +81,24 @@ exports.excelbatchprocessing = function (req, res) {
                                                 } else {
 
                                                     emailer(personalemail, fullname, result.insertedIds[0], username, studentpassword);
-                                                    console.log('student inserted successfully');
+
                                                 }
                                             });
                                         });
                                     }
                                 }
                                 fs.unlink(targetPath);
-                                console.log("file now deleted");
                                 res.send("completed!");
-
                             }
                             else {
                                 res.send(JSON.stringify(output));
                             }
                         }
                     });
-
                 }
             });
-
         });
-
-
     });
-
 }
 
 
@@ -292,10 +278,8 @@ function comparedate(inputdate) {
 
 
 function genericmailer(mailto, data, pathtemp, message, filename, attachmentfilepath, messagetype, loginurl, callback) {
-    const fromaddress = 'webmaster@ibrokerme.com';
-    const emailbody = {};
+    const fromaddress = 'social@ibrokerme.com';
     try {
-        var sendPwdReminder = '';
         const config = {
             host: 'auth.smtp.1and1.co.uk',
             // port: 465,
@@ -303,18 +287,15 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
             port: 587,
             secure: false,
             auth: {
-                user: 'webmaster@ibrokerme.com',
-                pass: '1Brok3rM3wm'
+                user: 'social@ibrokerme.com',
+                pass: '1Brok3rM3social'
             },
             tls: {
                 // do not fail on invalid certs
                 rejectUnauthorized: false
             }
         };
-        emailbody.firstname = 'jideboris';
-
-        var transporter = nodemailer.createTransport(config, emailbody);
-
+        var transporter = nodemailer.createTransport(config);
         if (messagetype === 'registration') {
             readHTMLFile(pathtemp, function (err, html) {
                 let template = handlebars.compile(html);
@@ -322,14 +303,14 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
                     firstname: data.username,
                     email: data.email,
                     username: data.username,
-                    registrationpath:loginurl
+                    registrationpath: loginurl
 
                 };
                 let htmlToSend = template(replacements);
                 let mailOptions = {
                     from: fromaddress,
                     to: mailto,
-                    subject:  'Email validation',
+                    subject: 'Email validation',
                     html: htmlToSend
 
                 };
@@ -368,14 +349,35 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
                 });
             });
         }
-        else if (messagetype === 'asignedsecureme') {
-            sendPwdReminder = transporter.templateSender({
-                subject: 'Assigned SecureMe',
-                html: fs.readFileSync(targetPath)
+        else if (messagetype === 'secureme') {
+            readHTMLFile(pathtemp, function (err, html) {
+                let template = handlebars.compile(html);
+                let replacements = {
+                    fullname: message.fullname,
+                    emailmessage: message.emailmessage,
+                    subject: message.subject,
+                    senderaddress: message.cc[0],
+                    url: data.length > 0 ? data[0].url : '',
+                    username: data.length > 0 ? data[0].username : '',
+                    password: data.length > 0 ? data[0].password : ''
 
-            }, {
+                };
+                let htmlToSend = template(replacements);
+                let mailOptions = {
                     from: fromaddress,
+                    to: mailto,
+                    subject: message.subject,
+                    html: htmlToSend
+
+                };
+                transporter.sendMail(mailOptions, function (error, response) {
+                    if (error) {
+                        return callback(error);
+                    } else {
+                        return callback(response);
+                    }
                 });
+            });
         }
         else if (messagetype === 'documentme') {
             readHTMLFile(pathtemp, function (err, html) {
@@ -412,18 +414,6 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
         else {
 
         }
-        // use template based sender to send a message
-        // sendPwdReminder({
-        //     to: mailto
-        // }, emailbody, function (err, info) {
-        //     console.log('--------------here')
-        //     console.log(err)
-        //     if (err) {
-        //         return callback(err);
-        //     } else {
-        //         return callback(info);
-        //     }
-        // });
     }
     catch (err) {
         return err;

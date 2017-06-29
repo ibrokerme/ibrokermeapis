@@ -1,11 +1,10 @@
-var mv = require('mv');
+const mv = require('mv');
 const common = require('./common');
-const toArrayBuffer = require('to-arraybuffer')
-var unoconv = require('unoconv');
-var converter = require('office-converter');
-var office = require("office-to-pdf")
-path = require('path'),
-    exec = require('child_process').exec;
+const toArrayBuffer = require('to-arraybuffer');
+const mammoth = require("mammoth");
+path = require('path');
+const converter = require('./documentconverter');
+
 
 var documentme = {
     getdocumenttype: getdocumenttype,
@@ -40,14 +39,13 @@ function removedocumentimage(req, res) {
             } else if (result[0] != '' && typeof (result[0] != 'undefined')) {
                 db.collection('documentme', function (error, collection) {
                     collection.remove({ userid: userid, _id: new ObjectID(documentid) });
-
+                    retrievedocuments(userid, res);
                 })
             }
-            res.send('done');
+
         })
     })
 }
-
 function getdocumenttype(req, res) {
     var userid = req.params.userid || '';
     try {
@@ -73,6 +71,86 @@ function getdocumenttype(req, res) {
         res.status(500).send("error has occurred");
     }
 }
+function prococessdocumentupload(processor, html, messages, res) {
+    var photoimage = {};
+
+    mv(processor.tempPath, processor.targetPath, function (err) {
+        if (err) {
+            throw err
+        }
+        else {
+            var data = fs.readFileSync(processor.targetPath);
+            var image = new Binary(data);
+            photoimage = {
+                type: processor.filetype,
+                name: processor.filename,
+                imagedata: image,
+                imagedatahtml: processor.skip ? html : ''
+            }
+
+            fs.unlink(processor.targetPath);
+            if (processor.otherdoc) {
+                db.collection('documentothertype', function (err, collection) {
+                    collection.insert(
+                        {
+                            userid: processor.userid,
+                            documenttype: processor.documenttype,
+
+                        }, { safe: true }, function (err, result) {
+                            if (err) {
+                                res.send({ 'error': 'An error has occurred' });
+                            }
+                            else {
+                                var otherdocid = result.insertedIds[0];
+                                db.collection('documentme', function (err, collection) {
+                                    collection.insert(
+                                        {
+                                            otherdocid: otherdocid,
+                                            userid: processor.userid,
+                                            filename: processor.filename,
+                                            filetype: processor.filetype,
+                                            documenttype: processor.documenttype,
+                                            dateadded: processor.dateadded,
+                                            document: photoimage
+                                        }, { safe: true }, function (err, result) {
+                                            if (err) {
+                                                res.send({ 'error': 'An error has occurred' });
+                                            }
+                                            else {
+                                                retrievedocuments(processor.userid, res)
+                                            }
+
+                                        });
+                                });
+                            }
+                        });
+                });
+            }
+            else {
+                db.collection('documentme', function (err, collection) {
+                    collection.insert(
+                        {
+                            userid: processor.userid,
+                            filename: processor.filename,
+                            filetype: processor.filetype,
+                            documenttype: processor.documenttype,
+                            dateadded: processor.dateadded,
+                            document: photoimage
+                        }, { safe: true }, function (err, result) {
+                            if (err) {
+                                res.send({ 'error': 'An error has occurred' });
+                            }
+                            else {
+                                retrievedocuments(processor.userid, res)
+                            }
+
+                        });
+                });
+            }
+
+        }
+    })
+}
 function uploaddocument(req, res) {
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, fields, files) {
@@ -83,6 +161,8 @@ function uploaddocument(req, res) {
         var filename = '';
         var filetype = '';
         var targetPath = '';
+        var html = '';
+        var messages = '';
 
         if (Object.keys(files).length > 0) {
             file = files.documentfile;
@@ -94,82 +174,37 @@ function uploaddocument(req, res) {
         }
         var documenttype = fields.document;
         var userid = fields.userid;
+        var fileextension = fields.fileextension;
         var otherdoc = JSON.parse(fields.otherdoc);
 
-        mv(tempPath, targetPath, function (err) {
-            if (err) {
-                throw err
-            }
-            else {
-                var data = fs.readFileSync(targetPath);
-                var image = new Binary(data);
-                photoimage = {
-                    type: filetype,
-                    name: filename,
-                    imagedata: image
-                }
-                fs.unlink(targetPath);
-                if (otherdoc) {
-                    db.collection('documentothertype', function (err, collection) {
-                        collection.insert(
-                            {
-                                userid: userid,
-                                documenttype: documenttype,
+        var processor = {
+            tempPath: tempPath,
+            targetPath: targetPath,
+            otherdoc: otherdoc,
+            filetype: filetype,
+            filename: filename,
+            userid: userid,
+            documenttype: documenttype,
+            dateadded: dateadded,
+            skip: fileextension === 'docx'
 
-                            }, { safe: true }, function (err, result) {
-                                if (err) {
-                                    res.send({ 'error': 'An error has occurred' });
-                                }
-                                else {
-                                    var otherdocid = result.insertedIds[0];
-                                    db.collection('documentme', function (err, collection) {
-                                        collection.insert(
-                                            {
-                                                otherdocid: otherdocid,
-                                                userid: userid,
-                                                filename: filename,
-                                                filetype: filetype,
-                                                documenttype: documenttype,
-                                                dateadded: dateadded,
-                                                document: photoimage
-                                            }, { safe: true }, function (err, result) {
-                                                if (err) {
-                                                    res.send({ 'error': 'An error has occurred' });
-                                                }
-                                                else {
-                                                    res.status(200).send(result);
-                                                }
-
-                                            });
-                                    });
-                                }
-                            });
-                    });
-                }
-                else {
-                    db.collection('documentme', function (err, collection) {
-                        collection.insert(
-                            {
-                                userid: userid,
-                                filename: filename,
-                                filetype: filetype,
-                                documenttype: documenttype,
-                                dateadded: dateadded,
-                                document: photoimage
-                            }, { safe: true }, function (err, result) {
-                                if (err) {
-                                    res.send({ 'error': 'An error has occurred' });
-                                }
-                                else {
-                                    res.status(200).send(result);
-                                }
-
-                            });
-                    });
-                }
-
-            }
-        })
+        }
+        // var outputpath = path.resolve('./images/output.pdf');
+        // converter.converter(tempPath, outputpath, 'words', (resp) => {
+        //     console.log(resp)
+        // })
+        if (processor.skip) {
+            mammoth.convertToHtml({ path: tempPath })
+                .then(function (result) {
+                    html = result.value;
+                    messages = result.messages;
+                    prococessdocumentupload(processor, html, messages, res);
+                })
+                .done();
+        }
+        else {
+            prococessdocumentupload(processor, html, messages, res);
+        }
     })
 }
 function getdocumentdetails(req, res) {
@@ -231,42 +266,6 @@ function getdocumentdata(req, res) {
         res.status(500).send("error has occurred");
     }
 }
-
-function pipedoc(inputPath, finaltype, stream) {
-    // var finalPath = path.resolve('./images/' + 'output.html');// path.dirname(inputPath) + "/" + path.basename(inputPath).split('.')[0] + ".html";
-    // var convCommand = 'unoconv -f ' + finaltype + " " + inputPath;
-    // console.log(inputPath)
-    // exec(convCommand, function (err, stdout, stderr) {
-    //     console.log(err)
-    //     process.stdout.write(stdout);
-    //     console.log(stdout)
-    //     fs.createReadStream(finalPath).pipe(stream);
-    // });
-    // var unoconv = require('unoconv');
-
-    // unoconv.convert(inputPath, 'pdf', function (err, result) {
-    //     var listener = unoconv.listen({ port: 2002 });
-
-    //     listener.stdout.on('data', function (data) {
-    //         console.log('stdout: ' + data.toString('utf8'));
-    //     });
-    //     listener.stdout.on('end', function (data) {
-    //         // fs.writeFile('converted.pdf', result);
-    //         console.log('end: ' + data.toString('utf8'));
-    //     });
-
-    // });
-
-
-    office(inputPath).then(
-        () => {
-            console.log("OK")
-        }, (err) => {
-            console.log(err)
-        }
-    )
-}
-
 function getdocumentimage(req, res) {
     var userid = req.params.userid || '';
     var docid = req.params.documentid || '';
@@ -279,19 +278,25 @@ function getdocumentimage(req, res) {
                     var data = output[0];
                     var photo = '';
                     var filedata = data.filetype.split('/')[0]
+
                     switch (filedata) {
                         case 'application':
                             var targetPath = path.resolve('./images/' + data.filename);
-                            fs.writeFile(targetPath, data.document.imagedata.buffer, function (err) {
-                                if (err) {
-                                    res.send(err);
-                                }
-                                // pipedoc(targetPath, 'html', res);
-                                var filestream = fs.createReadStream(targetPath);
-                                filestream.pipe(res);
-                                fs.unlink(targetPath);
+                            var filename = data.filename.split('.')[1]
+                            if (filename !== 'docx') {
+                                fs.writeFile(targetPath, data.document.imagedata.buffer, function (err) {
+                                    if (err) {
+                                        res.send(err);
+                                    }
+                                    var filestream = fs.createReadStream(targetPath);
+                                    filestream.pipe(res);
+                                    fs.unlink(targetPath);
 
-                            });
+                                });
+                            }
+                            else {
+                                res.send(data);
+                            }
                             break;
                         case 'image':
                             if (data.document.imagedata !== null && data.document.imagedata !== '') {
@@ -340,7 +345,28 @@ function getdocuments(req, res) {
         res.status(500).send("error has occurred");
     }
 }
+function retrievedocuments(userid, res) {
+    db.collection('documentme', function (err, collection) {
+        collection.find({ userid: userid }).toArray(function (err, output) {
+            if (err) {
+                res.status(500).send(err);
+            } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
 
+                const data = output.map(function (item) {
+                    return {
+                        documentid: item._id,
+                        userid: item.userid,
+                        filename: item.filename,
+                        filetype: item.filetype,
+                        description: item.documenttype,
+                        dateadded: item.dateadded
+                    }
+                })
+                res.send(data);
+            }
+        })
+    })
+}
 function deletedocument(req, res) {
     var userid = req.params.userid || '';
     var docid = req.params.docid || '';
@@ -382,13 +408,16 @@ function emaildocument(req, res) {
                         }
                         else if (fromuser[0] != '' && typeof (fromuser[0] != 'undefined')) {
                             data = output[0];
-
                             if (message.emailcopy && fromuser.length > 0) {
                                 message.cc.push(fromuser[0].email)
                             }
                             common.genericmailer(message.email, data, pathtemp, message, '', '', 'documentme', '', (outcome) => {
-                                if (outcome.rejected.length === 0) {
-                                    res.send('Document emailed!');
+
+                                if (outcome !== undefined && outcome.rejected !== undefined && outcome.rejected.length === 0) {
+                                    res.status(200).send('Document emailed!');
+                                }
+                                else {
+                                    res.status(500).send(err);
                                 }
                             });
                         }
@@ -399,14 +428,5 @@ function emaildocument(req, res) {
         })
     })
 }
-
-
-
-
-//     // }
-//     // catch (err) {
-//     //     res.status(500).send("error has occurred");
-//     // }
-// })
 
 module.exports = documentme;
