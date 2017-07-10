@@ -15,6 +15,9 @@ function getsecuremes(req, res) {
                 } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
                     res.send(output);
                 }
+                else {
+                    res.send('No data found');
+                }
             })
         })
     }
@@ -54,6 +57,9 @@ function addsecureme(req, res) {
                                 } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
                                     res.send(output);
                                 }
+                                else {
+                                    res.send('No data found');
+                                }
                             })
                         })
                     }
@@ -82,6 +88,9 @@ function addsecureme(req, res) {
                                 } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
                                     res.send(output);
                                 }
+                                else {
+                                    res.send('No data found');
+                                }
                             })
                         })
                     }
@@ -106,6 +115,9 @@ function removesecureme(req, res) {
                         res.send('error returning secureme!!');
                     } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
                         res.send(JSON.stringify(output));
+                    }
+                    else {
+                        res.send('No data found');
                     }
                 })
             }
@@ -143,6 +155,9 @@ function assignsecureme(req, res) {
                                         res.status(500).send(err);
                                     }
                                 });
+                            }
+                            else {
+                                res.send('No data found');
                             }
 
                         })

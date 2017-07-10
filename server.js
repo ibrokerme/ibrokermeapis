@@ -65,6 +65,7 @@ const documentme = require('./routes/documentme');
 const secureme = require('./routes/secureme');
 const auth = require('./routes/auth');
 const version = '/api/v1/';
+const pdfs = require('./routes/generatepdf');
 
 
 
@@ -109,19 +110,24 @@ app.get(version + 'getwhoamiphoto/:userid', registrations.getuserphoto);
 app.post(version + 'updatepassword', registrations.changeuserpassword);
 
 app.post(version + 'adddocument', documentme.uploaddocument);
-// app.post(version + 'adddocument', documentme.uploadotherdocument);
+
+app.post(version + 'pdfdocument', documentme.getbase64document);
+
+app.get(version + 'getpdfdocument/:docid', pdfs.getpdfbase64);
+
 app.get(version + 'getdocuments/:userid', documentme.getdocuments);
 app.post(version + 'getadocument/:userid/:documentid', documentme.getdocumentdata);
 app.get(version + 'getadocumentdetails/:userid/:documentid', documentme.getdocumentdetails);
 app.post(version + 'getadocumentimage/:userid/:documentid', documentme.getdocumentimage);
-app.get(version + 'deletedocumentimage/:userid/:documentid', documentme.removedocumentimage);
+app.delete(version + 'deletedocumentimage/:userid/:documentid', documentme.removedocumentimage);
+app.post(version + 'documenttype/:userid/', documentme.getdocumenttype);
 
 app.post(version + 'sendemail', documentme.emaildocument);
 app.post(version + 'sendassign', secureme.emailassignment);
 
 app.post(version + 'savesecureme', secureme.addsecureme);
 app.get(version + 'getsecuremes/:userid', secureme.getsecuremes);
-app.get(version + 'deletesecureme/:userid/:id', secureme.removesecureme);
+app.delete(version + 'deletesecureme/:userid/:id', secureme.removesecureme);
 
  
 

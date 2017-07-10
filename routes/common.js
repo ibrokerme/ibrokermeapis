@@ -278,7 +278,7 @@ function comparedate(inputdate) {
 
 
 function genericmailer(mailto, data, pathtemp, message, filename, attachmentfilepath, messagetype, loginurl, callback) {
-    const fromaddress = 'social@ibrokerme.com';
+    const fromaddress = 'sales@ibrokerme.com';
     try {
         const config = {
             host: 'auth.smtp.1and1.co.uk',
@@ -287,8 +287,8 @@ function genericmailer(mailto, data, pathtemp, message, filename, attachmentfile
             port: 587,
             secure: false,
             auth: {
-                user: 'social@ibrokerme.com',
-                pass: '1Brok3rM3social'
+                user: 'sales@ibrokerme.com',
+                pass: '1Brok3rM3sales'
             },
             tls: {
                 // do not fail on invalid certs

@@ -3,7 +3,7 @@ const common = require('./common');
 const toArrayBuffer = require('to-arraybuffer');
 const mammoth = require("mammoth");
 path = require('path');
-const converter = require('./documentconverter');
+const propdf = require('./generatepdf');
 
 
 var documentme = {
@@ -15,7 +15,8 @@ var documentme = {
     deletedocument: deletedocument,
     emaildocument: emaildocument,
     getdocumentimage: getdocumentimage,
-    removedocumentimage: removedocumentimage
+    removedocumentimage: removedocumentimage,
+    getbase64document: getbase64document
 }
 const processdocuments = (documents) => {
     return documents.map((document) => {
@@ -27,6 +28,88 @@ const processdocuments = (documents) => {
             otherdocumenttype: document.otherdocumenttype
         };
     });
+}
+function getbase64document(req, res) {
+    var form = new formidable.IncomingForm();
+    form.parse(req, function (err, fields, files) {
+        var dateadded = common.gettodaydate();
+        var file = 'None';
+        var filesize = 0;
+        var tempPath = '';
+        var filename = '';
+        var filetype = '';
+        var targetPath = '';
+        var html = '';
+        var messages = '';
+
+        if (Object.keys(files).length > 0) {
+            file = files.documentfile;
+            tempPath = file.path;
+            filename = file.name;
+            filetype = file.type;
+            filesize = file.size;
+            targetPath = path.resolve('./images/' + filename);
+        }
+        var documenttype = fields.document;
+        var fileextension = fields.fileextension;
+        var userid = fields.userid;
+        var otherdoc = fields.otherdoc
+
+        var data = fs.readFileSync(tempPath);
+        var image = new Binary(data);
+        var buffer = new Buffer(image.buffer).toString('base64');
+
+        var processor = {
+            tempPath: tempPath,
+            targetPath: targetPath,
+            otherdoc: otherdoc,
+            filetype: filetype,
+            filename: filename,
+            userid: userid,
+            documenttype: documenttype,
+            dateadded: dateadded,
+            skip: fileextension === 'docx',
+            pdfdocumentid: ''
+
+        }
+        db.collection('pdfdocuments', function (err, collection) {
+            collection.insert(
+                {
+                    userid: userid,
+                    otherdoc: otherdoc,
+                    documenttype: documenttype,
+                    extension: fileextension,
+                    dateadded: dateadded,
+                    document: buffer,
+                    pdfdoc: ''
+                }, { safe: true }, function (err, result) {
+                    if (err) {
+                        res.send({ 'error': 'An error has occurred' });
+                    }
+                    else {
+                        propdf.getpdfbase64(userid, result.insertedIds).then((response) => {
+                            processor.pdfdocumentid = result.insertedIds[0];
+                             
+                            if (processor.skip) {
+                                mammoth.convertToHtml({ path: tempPath })
+                                    .then(function (result) {
+                                        html = result.value;
+                                        messages = result.messages;
+                                        prococessdocumentupload(processor, html, messages, res);
+                                    })
+                                    .done();
+                            }
+                            else {
+                                prococessdocumentupload(processor, html, messages, res);
+                            }
+                        })
+
+
+                    }
+
+                });
+        });
+    })
 }
 function removedocumentimage(req, res) {
     var userid = req.params.userid;
@@ -48,21 +131,17 @@ function removedocumentimage(req, res) {
 }
 function getdocumenttype(req, res) {
     var userid = req.params.userid || '';
+
     try {
-        db.collection('documenttypes', function (err, collection) {
-            collection.find({ userid: new ObjectID(userid) }).toArray(function (err, output) {
+        db.collection('documentothertype', function (err, collection) {
+            collection.find({ $or: [{ userid: userid }, { userid: "" }] }).toArray(function (err, output) {
                 if (err) {
                     res.status(500).send(err);
                 } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
                     res.send(output);
                 }
                 else {
-                    var data = {
-                        certificates: Certificates, options: { opt1: option1, opt2: option2 },
-                        insurance: Insurances, options: { opt3: option3, opt4: option4 },
-                        financial: Financial, options: { opt5: option5, opt6: option6 }, educational: Educational, options: { opt7: option7, opt8: option8 }
-                    }
-                    res.send(data);
+                    res.send('No data found');
                 }
             })
         })
@@ -110,6 +189,8 @@ function prococessdocumentupload(processor, html, messages, res) {
                                             filename: processor.filename,
                                             filetype: processor.filetype,
                                             documenttype: processor.documenttype,
+                                            documentcategory: processor.documentcategory,
+                                            pdfdocumentid: processor.pdfdocumentid,
                                             dateadded: processor.dateadded,
                                             document: photoimage
                                         }, { safe: true }, function (err, result) {
@@ -134,6 +215,8 @@ function prococessdocumentupload(processor, html, messages, res) {
                             filename: processor.filename,
                             filetype: processor.filetype,
                             documenttype: processor.documenttype,
+                            pdfdocumentid: processor.pdfdocumentid,
+                            documentcategory: processor.documentcategory,
                             dateadded: processor.dateadded,
                             document: photoimage
                         }, { safe: true }, function (err, result) {
@@ -173,6 +256,7 @@ function uploaddocument(req, res) {
             targetPath = path.resolve('./images/' + filename);
         }
         var documenttype = fields.document;
+        var documentcategory = fields.documentcategory;
         var userid = fields.userid;
         var fileextension = fields.fileextension;
         var otherdoc = JSON.parse(fields.otherdoc);
@@ -185,6 +269,7 @@ function uploaddocument(req, res) {
             filename: filename,
             userid: userid,
             documenttype: documenttype,
+            documentcategory: documentcategory,
             dateadded: dateadded,
             skip: fileextension === 'docx'
 
@@ -338,6 +423,9 @@ function getdocuments(req, res) {
                     })
                     res.send(data);
                 }
+                else {
+                    res.send('No data found');
+                }
             })
         })
     }
@@ -364,6 +452,9 @@ function retrievedocuments(userid, res) {
                 })
                 res.send(data);
             }
+            else {
+                res.send('No data found');
+            }
         })
     })
 }
@@ -382,6 +473,9 @@ function deletedocument(req, res) {
                         } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
                             const finaloutput = processdocuments(output);
                             res.send(JSON.stringify(finaloutput));
+                        }
+                        else {
+                            res.send('No data found');
                         }
                     })
                 }
