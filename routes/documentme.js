@@ -89,7 +89,7 @@ function getbase64document(req, res) {
                     else {
                         propdf.getpdfbase64(userid, result.insertedIds).then((response) => {
                             processor.pdfdocumentid = result.insertedIds[0];
-                             
+
                             if (processor.skip) {
                                 mammoth.convertToHtml({ path: tempPath })
                                     .then(function (result) {
@@ -138,7 +138,7 @@ function getdocumenttype(req, res) {
                 if (err) {
                     res.status(500).send(err);
                 } else if (output[0] != '' && typeof (output[0] != 'undefined')) {
-                    res.send(output);
+                    res.send(JSON.stringify(output));
                 }
                 else {
                     res.send('No data found');
@@ -308,7 +308,7 @@ function getdocumentdetails(req, res) {
                         description: data.documenttype,
                         dateadded: data.dateadded
                     }
-                    res.send(finaloutput);
+                    res.send(JSON.stringify(finaloutput));
                 }
                 else {
                     res.send('No record found');
@@ -380,7 +380,7 @@ function getdocumentimage(req, res) {
                                 });
                             }
                             else {
-                                res.send(data);
+                                res.send(JSON.stringify(data));
                             }
                             break;
                         case 'image':
@@ -421,7 +421,7 @@ function getdocuments(req, res) {
                             dateadded: item.dateadded
                         }
                     })
-                    res.send(data);
+                    res.send(JSON.stringify(data));
                 }
                 else {
                     res.send('No data found');
@@ -450,7 +450,7 @@ function retrievedocuments(userid, res) {
                         dateadded: item.dateadded
                     }
                 })
-                res.send(JSON.parse(JSON.stringify(data)));
+                res.send(JSON.stringify(data));
             }
             else {
                 res.send('No data found');
