@@ -450,7 +450,7 @@ function retrievedocuments(userid, res) {
                         dateadded: item.dateadded
                     }
                 })
-                res.send(data);
+                res.send(JSON.parse(JSON.stringify(data)));
             }
             else {
                 res.send('No data found');
