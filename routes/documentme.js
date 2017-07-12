@@ -235,6 +235,7 @@ function prococessdocumentupload(processor, html, messages, res) {
     })
 }
 function uploaddocument(req, res) {
+    //console.log(req.body);
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, fields, files) {
         var dateadded = common.gettodaydate();
@@ -291,6 +292,7 @@ function uploaddocument(req, res) {
             prococessdocumentupload(processor, html, messages, res);
         }
     })
+  //  res.send('dome')
 }
 function getdocumentdetails(req, res) {
     var userid = req.params.userid || '';
