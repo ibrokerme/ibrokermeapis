@@ -259,7 +259,7 @@ function uploaddocument(req, res) {
         var documentcategory = fields.documentcategory;
         var userid = fields.userid;
         var fileextension = fields.fileextension;
-        var otherdoc = JSON.parse(fields.otherdoc);
+        var otherdoc = fields.otherdoc;
 
         var processor = {
             tempPath: tempPath,
