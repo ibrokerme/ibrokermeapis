@@ -85,8 +85,8 @@ app.use(logger('dev'));
 // var accessLogStream = fs.createWriteStream(__dirname + '/access.log', { flags: 'a' });
 // app.use(logger('combined', { stream: accessLogStream }));
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json({ type: 'application/json' }));
+ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(helmet())
 app.use(cors());
