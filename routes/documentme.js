@@ -249,6 +249,7 @@ function uploaddocument(req, res) {
 
         if (Object.keys(files).length > 0) {
             file = files.documentfile;
+            console.log(file);
             tempPath = file.path;
             filename = file.name;
             filetype = file.type;
